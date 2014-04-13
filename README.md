@@ -23,7 +23,7 @@ A pipe stream will pass the output from each member as the input to the next (ba
 
 ![combo stream diagram](https://github.com/binocarlos/streamworks/raw/master/graphics/combo.png "combo stream diagram")
 
-Both types accepts streams as well as arguments - you can combine merge and pipes with each other!
+Both types accepts streams in their list - you can combine merge and pipes with each other - it's stream inception!
 
 ## installation
 
