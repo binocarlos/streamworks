@@ -1,6 +1,6 @@
 {
   "name": "streamworks",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Run a nested collection of streams in pipe or merge configurations",
   "main": "src/index.js",
   "scripts": {
