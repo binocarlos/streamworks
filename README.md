@@ -1,10 +1,29 @@
 streamworks
 ===========
 
-Run a nested collection of streams in pipe or merge configurations
+![streamworks logo](https://github.com/binocarlos/streamworks/raw/master/graphics/stream.png "streamworks Logo")
 
-![Build status](https://api.travis-ci.org/streamworks/len.png)
+![Build status](https://api.travis-ci.org/streamworks/streamworks.png)
 
+Combine merge and pipe streams into stream architectures that can bend packets to your will.
+
+## merge stream
+
+![merge stream diagram](https://github.com/binocarlos/streamworks/raw/master/graphics/merge.png "merge stream diagram")
+
+A merge stream will duplicate the input across all members and merge the output from all members (based on [combine-stream](https://github.com/deoxxa/combine-stream).
+
+## pipe stream
+
+![pipe stream diagram](https://github.com/binocarlos/streamworks/raw/master/graphics/pipe.png "pipe stream diagram")
+
+A pipe stream will pass the output from each member as the input to the next (based on [stream-combiner](https://github.com/dominictarr/stream-combiner).
+
+## combo streams
+
+![combo stream diagram](https://github.com/binocarlos/streamworks/raw/master/graphics/combo.png "combo stream diagram")
+
+Both types accepts streams as well as arguments - you can combine merge and pipes with each other!
 
 ## installation
 
@@ -16,30 +35,13 @@ $ npm install streamworks
 
 There are 2 main methods:
 
-### merge
- 
-[combine-stream](https://github.com/deoxxa/combine-stream)
+ * merge
+ * pipe
 
-split the input stream across each function and merge the results back into the output
-
-### pipe
-
-[stream-combiner](https://github.com/dominictarr/stream-combiner)
-
-run the input into the first function and pipe through the rest
-
-## constructor
-
-You create each type of stream by passing an array of either:
+Create each type of stream by passing an array of either:
 
  * functions - these are turned into streams using [through2](https://github.com/rvagg/through2)
- * streams - these are piped through
-
-You can pass streamworks merge or pipe streams to other streamworks merge or pipe streams - stream inception!
-
-Each method takes some options:
-
- * objectMode - true to indicate to the auto constructed streams they should work in object mode
+ * streams - these are used as is
 
 ## example
 
@@ -47,115 +49,169 @@ Each method takes some options:
 var from = require('from');
 var streamworks = require('streamworks');
 
-// a pipe is a stream that passes values through each function
-var filterstream = streamworks.pipe([
-
-	function(value){
-		this.queue(parseFloat(value) + 5)
-	},
-
-	function(value){
-		this.queue(parseFloat(value) / 2)
-	}
-])
 
 // a merge is a stream that splits the input across each function and merges the output back into one stream
-var duplicatestream = streamworks.merge([
+var mergestream = streamworks.merge([
 
-	function(value){
-		this.queue('A: ' + value)
+	// order lots
+	function(chunk, enc, callback){
+		this.push(chunk + ':10')
+		callback()
 	},
 
-	function(value){
-		this.queue('B: ' + (parseFloat(value)+10))
+	// order some
+	function(chunk, enc, callback){
+		this.push(chunk + ':2')
+		callback()
 	}
 ])
 
-// we can now create our final stream by piping numbers through the filter (pipe) and then duplicator (merge)
-from([10, 11, 12])
-	.pipe(filterstream)
-	.pipe(duplicatestream)
-	.pipe(process.stdout)
 
-// A: 7.5
-// B: 17.5
-// A: 8
-// B: 18
-// A: 8.5
-// B: 18.5
-```
+// a pipe is a stream that passes values through each function
+var pipestream = streamworks.pipe([
 
-## nested streams
-
-You can create a tree of dependent streams:
-
-```js
-var master = streamworks.merge([
-
-	// pipe A
-	streamworks.pipe([
-
-		// initial filter
-		function(val){
-			val = parseFloat(val);
-			if(val>10){
-				this.queue(val);	
-			}
-			
-		},
-
-		// merge collection of async resources
-		streamworks.merge([
-
-			function(val){
-				fetchAsyncResourceA(val, function(error, answer){
-					this.queue(answer)
-				})
-			},
-
-			function(val){
-				fetchAsyncResourceB(val, function(error, answer){
-					this.queue(answer)
-				})
-			}
-
-		]),
-
-		// final filter
-		function(val){
-			val = parseFloat(val);
-			if(val>100){
-				this.queue(val);	
-			}
-		},
-
-	]),
-
-	// pipe B
-	streamworks.pipe([
-		function(val){
-			return parseFloat(val * 1000);
+	// filter anything that does not start with p
+	function(chunk, enc, callback){
+		if(chunk.toString().indexOf('p')!=0){
+			this.push(chunk);
 		}
-	])
+		callback();
+	},
+
+	// uppercase to input
+	function(chunk, enc, callback){
+
+		this.push(chunk.toString().toUpperCase())
+	}
 ])
 
+// run some data through the merge stream (which will duplicate it) and then through the pipe stream (which will filter it)
+from(['apple', 'pie', 'custard'])
+	.pipe(mergestream)
+	.pipe(pipestream)
+	.pipe(process.stdout)
 ```
 
 ## nested streams
 
-You can create a tree of dependent streams:
+Because streamworks streams are, umm, streams - you can create complex nested stream-structures:
 
-The results would be an un-sorted collection of pipe A results and pipe B results (because the top level stream is a merge).
+```js
+
+var bigAssStream = streamworks.pipe([
+  function(chunk, enc, callback){
+    if(chunk!='world'){
+      this.push(chunk);
+    }
+    callback();
+  },
+
+  streamworks.merge([
+    function(chunk, enc, callback){
+      this.push('A1:' + chunk);
+      callback();
+    },
+    function(chunk, enc, callback){
+      this.push('A2:' + chunk);
+      callback();
+    },
+    function(chunk, enc, callback){
+      this.push('A3:' + chunk);
+      callback();
+    }
+  ]),
+
+  streamworks.pipe([
+
+    function(chunk, enc, callback){
+      if(chunk.toString().indexOf('A2')!=0){
+        this.push(chunk);
+      }
+      callback();
+    },
+    streamworks.merge([
+      function(chunk, enc, callback){
+        this.push('sub1:' + chunk);
+        callback(); 
+      },
+      function(chunk, enc, callback){
+        this.push('sub2:' + chunk);
+        callback(); 
+      }
+    ]),
+    function(chunk, enc, callback){
+      if(chunk.toString().indexOf('sub2:A1:')!=0){
+        this.push(chunk);
+      }
+      
+      callback()
+    },
+  ])
+])
+
+var arr = [];
+
+from(['hello','world','apple']).pipe(bigAssStream)
+.on('data', function(chunk){
+  arr.push(chunk.toString())
+}).on('end', function(){
+	console.dir(arr);
+})
+
+/*
+
+sub1:A1:hello
+sub1:A3:hello
+sub2:A3:hello
+sub1:A1:apple
+sub1:A3:apple
+sub2:A3:apple
+	
+*/
+
+```
+
+## object streams
+
+If you pass true or:
+
+```js
+{
+	objectMode:true
+}
+```
+
+as the first argument to pipe or merge - the stream will be in object mode.
+
+this means that the 'chunks' will be what you sent and not buffers/strings.
+
+You can also use:
+
+ * pipeObjects
+ * mergeObjects
+
+Which are shortcuts for:
+
+ * pipe(true, [])
+ * merge(true, [])
 
 ## api
 
-#### `streamworks.pipe(fns)`
+#### `streamworks.pipe([objectMode], fns)`
 
-create a new readable/writable stream that will pass each value through the array of streams/functions
+create a new readable/writable stream that will pipe each value through the array of streams/functions
 
-#### `streamworks.merge(fns)`
+#### `streamworks.pipeObjects(fns)`
+
+shorthand for pipe(true, [])
+
+#### `streamworks.merge([objectMode], fns)`
 
 create a new readable/writable stream that will duplicate each value into each of the streams/functions and merge the results back into the output
+
+#### `streamworks.mergeObjects(fns)`
+
+shorthand for merge(true, [])
 
 ## license
 
