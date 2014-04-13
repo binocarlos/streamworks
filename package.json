@@ -1,0 +1,39 @@
+{
+  "name": "streamworks",
+  "version": "0.0.1",
+  "description": "Run a nested collection of streams in pipe or merge configurations",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/binocarlos/streamworks.git"
+  },
+  "keywords": [
+    "calendar",
+    "database",
+    "time",
+    "resource",
+    "schedule",
+    "booking",
+    "leveldb"
+  ],
+  "devDependencies": {
+    "mocha": "~1.14.0",
+    "should": "~2.1.0",
+    "concat-stream": "~1.4.4"
+  },
+  "author": "Kai Davenport",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/binocarlos/streamworks/issues"
+  },
+  "homepage": "https://github.com/binocarlos/streamworks",
+  "dependencies": {
+    "from": "^0.1.3",
+    "combine-stream": "0.0.4",
+    "stream-combiner": "0.0.4",
+    "through2": "^0.4.1"
+  }
+}
