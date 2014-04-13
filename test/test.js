@@ -26,7 +26,7 @@ describe('streamworks', function(){
 
   })
 
-  describe('streams', function(){
+  describe('function streams', function(){
 
     it('should run a buffer/string merge', function(done){
 
@@ -185,6 +185,45 @@ describe('streamworks', function(){
       })
     })
 
+  })
+
+  describe('existing streams', function(){
+
+    it('should pipe with an existing duplex v2 stream', function(done){
+
+      var otherstream = through2(function(chunk, enc, callback){
+        this.push('YO' + chunk)
+        callback()
+      })
+
+      var p = streamworks.pipe([
+
+        // upercase name
+        function(chunk, enc, callback){
+          this.push(chunk.toString().toUpperCase());
+          callback();
+        },
+        otherstream,
+        function(chunk, enc, callback){
+          this.push('_' + chunk + '_');
+          callback();
+        }
+
+      ])
+
+      var arr = [];
+
+      from(['apple', 'orange', 'pear']).pipe(p)
+      .on('data', function(chunk){
+        arr.push(chunk.toString())
+      }).on('end', function(){
+        arr.length.should.equal(3);
+        arr[0].should.equal('_YOAPPLE_');
+        arr[1].should.equal('_YOORANGE_');
+        arr[2].should.equal('_YOPEAR_');
+        done();
+      })
+    })
   })
 
 	
