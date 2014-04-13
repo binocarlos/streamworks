@@ -1,5 +1,6 @@
 var from = require('from');
 var through2 = require('through2');
+var through = require('through');
 var streamworks = require('../src');
 
 describe('streamworks', function(){
@@ -189,12 +190,7 @@ describe('streamworks', function(){
 
   describe('existing streams', function(){
 
-    it('should pipe with an existing duplex v2 stream', function(done){
-
-      var otherstream = through2(function(chunk, enc, callback){
-        this.push('YO' + chunk)
-        callback()
-      })
+    function testExistingStream(existingStream, done){
 
       var p = streamworks.pipe([
 
@@ -203,7 +199,7 @@ describe('streamworks', function(){
           this.push(chunk.toString().toUpperCase());
           callback();
         },
-        otherstream,
+        existingStream,
         function(chunk, enc, callback){
           this.push('_' + chunk + '_');
           callback();
@@ -223,7 +219,107 @@ describe('streamworks', function(){
         arr[2].should.equal('_YOPEAR_');
         done();
       })
+    }
+
+    it('should pipe with an existing duplex v2 stream', function(done){
+
+      var otherstream = through2(function(chunk, enc, callback){
+        this.push('YO' + chunk)
+        callback()
+      })
+
+      testExistingStream(otherstream, done);
+
     })
+
+
+    it('should pipe with an existing duplex v1 stream', function(done){
+
+      var otherstream = through(function(chunk){
+        this.queue('YO' + chunk)
+      })
+
+      testExistingStream(otherstream, done);
+
+    })
+  })
+
+  describe('nesting', function(){
+
+    it('should combine a very complicated bunch of streams and get the expected answer (yo)', function(done){
+
+      var p = streamworks.pipe([
+        function(chunk, enc, callback){
+          if(chunk!='world'){
+            this.push(chunk);
+          }
+          callback();
+        },
+
+        streamworks.merge([
+          function(chunk, enc, callback){
+            this.push('A1:' + chunk);
+            callback();
+          },
+          function(chunk, enc, callback){
+            this.push('A2:' + chunk);
+            callback();
+          },
+          function(chunk, enc, callback){
+            this.push('A3:' + chunk);
+            callback();
+          }
+        ]),
+
+        streamworks.pipe([
+
+          function(chunk, enc, callback){
+            if(chunk.toString().indexOf('A2')!=0){
+              this.push(chunk);
+            }
+            callback();
+          },
+          streamworks.merge([
+            function(chunk, enc, callback){
+              this.push('sub1:' + chunk);
+              callback(); 
+            },
+            function(chunk, enc, callback){
+              this.push('sub2:' + chunk);
+              callback(); 
+            }
+          ]),
+          function(chunk, enc, callback){
+            if(chunk.toString().indexOf('sub2:A1:')!=0){
+              this.push(chunk);
+            }
+            
+            callback()
+          },
+        ])
+
+      ])
+
+
+      var arr = [];
+
+      from(['hello','world','apple']).pipe(p)
+      .on('data', function(chunk){
+        arr.push(chunk.toString())
+      }).on('end', function(){
+        arr.length.should.equal(6);
+        arr[0].should.equal('sub1:A1:hello');
+        arr[1].should.equal('sub1:A3:hello');
+        arr[2].should.equal('sub2:A3:hello');
+        arr[3].should.equal('sub1:A1:apple');
+        arr[4].should.equal('sub1:A3:apple');
+        arr[5].should.equal('sub2:A3:apple');
+        done();
+      })
+
+
+    })
+
   })
 
 	

@@ -22,7 +22,8 @@
   "devDependencies": {
     "mocha": "~1.14.0",
     "should": "~2.1.0",
-    "concat-stream": "~1.4.4"
+    "concat-stream": "~1.4.4",
+    "through": "^2.3.4"
   },
   "author": "Kai Davenport",
   "license": "MIT",
