@@ -11,13 +11,11 @@
     "url": "https://github.com/binocarlos/streamworks.git"
   },
   "keywords": [
-    "calendar",
-    "database",
-    "time",
-    "resource",
-    "schedule",
-    "booking",
-    "leveldb"
+    "stream",
+    "combine",
+    "pipe",
+    "merge",
+    "streaming"
   ],
   "devDependencies": {
     "mocha": "~1.14.0",
