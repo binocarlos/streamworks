@@ -1,9 +1,9 @@
 streamworks
 ===========
 
-![streamworks logo](https://github.com/binocarlos/streamworks/raw/master/graphics/stream.png "streamworks Logo")
+![streamworks logo](https://github.com/binocarlos/streamworks/raw/master/graphics/stream.jpg "streamworks Logo")
 
-![Build status](https://api.travis-ci.org/streamworks/streamworks.png)
+![Build status](https://api.travis-ci.org/binocarlos/streamworks.png)
 
 Combine merge and pipe streams into stream architectures that can bend packets to your will.
 
